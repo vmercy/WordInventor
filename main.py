@@ -1,12 +1,15 @@
-def normalizeSample(filename):
-  """Normalizes the sample text file by performing:
-  * a lowercase transformation
-  * a deletion of special characters
-  * a replacement of all ponctuation marks with white spaces
+import csv
 
-  Args:
-      filename (str): the relative path of the file to be normalized
-  """
+
+def normalizeSample(filename):
+    """Normalizes the sample text file by performing:
+    * a lowercase transformation
+    * a deletion of special characters
+    * a replacement of all ponctuation marks with white spaces
+
+    Args:
+        filename (str): the relative path of the file to be normalized
+    """
 
 
 def parseSample(filename):
@@ -27,15 +30,16 @@ def parseSample(filename):
                     [char, sampleString[indexChar+1], 1])
     return sequenceMatrix
 
+
 def sequenceMatrixToPercentage(sequenceMatrix):
-  """Turns the sequence matrix into a percentage matrix representing, for each charachter, the probability of a second charchater to follow the first
+    """Turns the sequence matrix into a percentage matrix representing, for each charachter, the probability of a second charchater to follow the first
 
-  Args:
-      sequenceMatrix (array): the multidimensional sequence matrix
+    Args:
+        sequenceMatrix (array): the multidimensional sequence matrix
 
-  Returns:
-      array: the multidimensional percentage matrix
-  """
+    Returns:
+        array: the multidimensional percentage matrix
+    """
     percentArray = []
     leftHandChars = []
     for sequence in sequenceMatrix:
@@ -44,7 +48,8 @@ def sequenceMatrixToPercentage(sequenceMatrix):
             subPercentArray = []
             for sequenceBis in sequenceMatrix:
                 if sequenceBis[0] == sequence[0]:
-                    subPercentArray.append([sequenceBis[1], sequenceBis[2]])
+                    subPercentArray.append(
+                        [sequenceBis[1], sequenceBis[2]])
             percentArray.append([sequence[0], subPercentArray])
     for element in percentArray:
         totalSequences = 0
@@ -54,14 +59,49 @@ def sequenceMatrixToPercentage(sequenceMatrix):
             subElement[1] /= float(totalSequences)
     return percentArray
 
-def percentageMatrixToCSV(percentageMatrix):
-  """Writes a CSV file with a 2-Dim representation of the percentage matrix
 
-  Args:
-      percentageMatrix (array): the percentage matrix
-  """
+def percentageMatrixToCSV(sequenceMatrix, percentageMatrix, targetFilename):
+    """Writes a CSV file with a 2-Dim representation of the percentage matrix
+
+    Args:
+        sequenceMatrix (array): the sequence matrix
+        percentageMatrix (array): the percentage matrix
+        targetFilename (string): the target filename
+    """
+    allChars = getAllChars(sequenceMatrix)
+    header = ['']+allChars
+    rows = []
+    for previous in allChars:
+      nextCharPercentages = []
+      for percentSubArray in percentageMatrix:
+        if percentSubArray[0] == previous:
+          nextCharPercentages = percentSubArray[1]
+          break
+      newRow = [previous]+len(header)*[0]
+      rows.append(newRow)
+      for next in nextCharPercentages:
+        rows[allChars.index(previous)][1+allChars.index(next[0])] = next[1]
+        
+
+
+    with open(targetFilename, 'w', newline='') as file:
+        writer = csv.writer(file, quoting=csv.QUOTE_NONNUMERIC, delimiter=';')
+        writer.writerows([header]+rows)
+        
+
+def getAllChars(sequenceMatrix):
+    allChars = []
+    for sequence in sequenceMatrix:
+        for i in range(0, 2):
+            if not sequence[i] in allChars:
+                allChars.append(sequence[i])
+    allChars.sort()
+    return allChars
+
 
 # if __name__ == __main__:
 sequenceMatrix = parseSample("samples/miserables.txt")
 percentArray = sequenceMatrixToPercentage(sequenceMatrix)
+csvFile = "sequences_sample.csv"
+percentageMatrixToCSV(sequenceMatrix, percentArray, csvFile)
 print(percentArray)
