@@ -3,6 +3,7 @@ import random
 import time
 import json
 
+
 def normalizeSample(filename):
     """Normalizes the sample text file by performing:
     * a lowercase transformation
@@ -14,33 +15,35 @@ def normalizeSample(filename):
     """
     pass
 
+
 def parseSample(filename):
-  """Generates the sequence matrix by reading a normalized file
+    """Generates the sequence matrix by reading a normalized file
 
-  Args:
-      filename (string): the relative path of the file to be analyzed
+    Args:
+        filename (string): the relative path of the file to be analyzed
 
-  Returns:
-      array: the sequence matrix resulting of the analysis
-  """
-  f = open(filename, "r")
-  sampleString = f.read()
-  sequenceMatrix = []
-  for (indexChar, char) in enumerate(sampleString):
-    if(indexChar != len(sampleString)-1):
-      nextChar = sampleString[indexChar+1]
-      if not (ord(char) in range(ord('a'),ord('z')+1)) or not (ord(nextChar) in range(ord('a'),ord('z')+1)): #TODO: move to normalize function and allow white space
-        continue
-      alreadyIn = False
-      for sequence in sequenceMatrix:
-          if (sequence[0] == char) and (sequence[1] == nextChar):
-              sequence[2] += 1
-              alreadyIn = True
-              break
-      if not alreadyIn:
-          sequenceMatrix.append(
-              [char, sampleString[indexChar+1], 1])
-  return sequenceMatrix
+    Returns:
+        array: the sequence matrix resulting of the analysis
+    """
+    f = open(filename, "r")
+    sampleString = f.read()
+    sequenceMatrix = []
+    for (indexChar, char) in enumerate(sampleString):
+        if(indexChar != len(sampleString)-1):
+            nextChar = sampleString[indexChar+1]
+            # TODO: move to normalize function and allow white space
+            if not (ord(char) in range(ord('a'), ord('z')+1)) or not (ord(nextChar) in range(ord('a'), ord('z')+1)):
+                continue
+            alreadyIn = False
+            for sequence in sequenceMatrix:
+                if (sequence[0] == char) and (sequence[1] == nextChar):
+                    sequence[2] += 1
+                    alreadyIn = True
+                    break
+            if not alreadyIn:
+                sequenceMatrix.append(
+                    [char, sampleString[indexChar+1], 1])
+    return sequenceMatrix
 
 
 def sequenceMatrixToPercentage(sequenceMatrix):
@@ -71,27 +74,30 @@ def sequenceMatrixToPercentage(sequenceMatrix):
             subElement[1] /= float(totalSequences)
     return percentArray
 
-def percentageMatrixToJson(percentageMatrix, filename):
-  """Writes a JSON file to save the percentage matrix
 
-  Args:
-      percentageMatrix (array): the percentage matrix
-      filename (string): output file relative path
-  """
-  with open(filename, "w") as outfile:
-    json.dump(percentageMatrix, outfile)
+def percentageMatrixToJson(percentageMatrix, filename):
+    """Writes a JSON file to save the percentage matrix
+
+    Args:
+        percentageMatrix (array): the percentage matrix
+        filename (string): output file relative path
+    """
+    with open(filename, "w") as outfile:
+        json.dump(percentageMatrix, outfile)
+
 
 def jsonToPercentageMatrix(filename):
-  """Reads a JSON file with the percentage matrix encoded inside
+    """Reads a JSON file with the percentage matrix encoded inside
 
-  Args:
-      filename (string): input file relative path
-  Returns:
-      array: the percentage matrix read
-  """
-  with open(filename, "r") as inputfile:
-    percentageMatrix = json.load(inputfile)
-    return percentageMatrix
+    Args:
+        filename (string): input file relative path
+    Returns:
+        array: the percentage matrix read
+    """
+    with open(filename, "r") as inputfile:
+        percentageMatrix = json.load(inputfile)
+        return percentageMatrix
+
 
 def percentageMatrixToCSV(sequenceMatrix, percentageMatrix, targetFilename):
     """Writes a CSV file with a 2-Dim representation of the percentage matrix
@@ -119,61 +125,68 @@ def percentageMatrixToCSV(sequenceMatrix, percentageMatrix, targetFilename):
         writer = csv.writer(file, quoting=csv.QUOTE_NONNUMERIC, delimiter=';')
         writer.writerows([header]+rows)
 
+
 def getAllChars(sequenceMatrix):
-  """Generates a list containing all analyzed characters. Each character appears only once.
+    """Generates a list containing all analyzed characters. Each character appears only once.
 
-  Args:
-      sequenceMatrix (array): the sequence matrix
+    Args:
+        sequenceMatrix (array): the sequence matrix
 
-  Returns:
-      array: array containing all analyzed characters with no duplicate
-  """
-  allChars = []
-  for sequence in sequenceMatrix:
-      for i in range(0, 2):
-          if not sequence[i] in allChars:
-              allChars.append(sequence[i])
-  allChars.sort()
-  return allChars
+    Returns:
+        array: array containing all analyzed characters with no duplicate
+    """
+    allChars = []
+    for sequence in sequenceMatrix:
+        for i in range(0, 2):
+            if not sequence[i] in allChars:
+                allChars.append(sequence[i])
+    allChars.sort()
+    return allChars
+
 
 def generateWord(percentageMatrix, length):
-  """Generates a new unexisting word following Markov Chains of percentageMatrix
+    """Generates a new unexisting word following Markov Chains of percentageMatrix
 
-  Args:
-      percentageMatrix (array): the percentage matrix
-      length (int): the desired length of generated word
+    Args:
+        percentageMatrix (array): the percentage matrix
+        length (int): the desired length of generated word
 
-  Returns:
-      string: the generated word
+    Returns:
+        string: the generated word
+    """
+    previous = random.choice(percentageMatrix)
+    word = previous[0]
+    for i in range(0, length-1):
+        charWeights = []
+        for next in previous[1]:
+            charWeights.append(next[1])
+        selectedChar = random.choices(previous[1], weights=charWeights)[0]
+        word += selectedChar[0]
+        found = False
+        for char in percentageMatrix:
+            if char[0] == selectedChar[0]:
+                previous = char
+                found = True
+        if not found:
+            exit
+
+    return word
+
+
+if __name__ == "__main__":
+  """ TO ANALYZE A SAMPLE TEXT : """
+  sequenceMatrix = parseSample("samples/german.txt")
+  percentArray = sequenceMatrixToPercentage(sequenceMatrix)
+  csvFile = "sequences_sample.csv"
+  percentageMatrixToCSV(sequenceMatrix, percentArray, csvFile)
+  JSONFile = "percentage_matrix.json"
+  percentageMatrixToJson(percentArray, JSONFile)
+
+
+  """ TO LOAD AN EXISTING ANALYSIS
+  percentArray = jsonToPercentageMatrix("percentage_matrix.json")
   """
-  previous = random.choice(percentageMatrix)
-  word = previous[0]
-  for i in range(0, length-1):
-      charWeights = []
-      for next in previous[1]:
-          charWeights.append(next[1])
-      selectedChar = random.choices(previous[1], weights=charWeights)[0]
-      word += selectedChar[0]
-      found = False
-      for char in percentageMatrix:
-        if char[0] == selectedChar[0]:
-          previous = char
-          found = True
-      if not found:
-        exit
 
-  return word
-
-# if __name__ == __main__:
-#sequenceMatrix = parseSample("/home/valentin/WordInventor/WordInventor/samples/miserables.txt")
-#percentArray = sequenceMatrixToPercentage(sequenceMatrix)
-#csvFile = "sequences_sample.csv"
-#percentageMatrixToCSV(sequenceMatrix, percentArray, csvFile)
-#JSONFile = "percentage_matrix.json"
-#percentageMatrixToJson(percentArray, JSONFile)
-#print(percentArray)
-percentArray = jsonToPercentageMatrix("/home/valentin/WordInventor/WordInventor/percentage_matrix.json")
-
-print("*********")
-for i in range(0,10):
-  print(generateWord(percentArray, 7))
+print("********* GENERATED WORDS : *********")
+for i in range(0, 10):
+    print(generateWord(percentArray, 7))
