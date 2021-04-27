@@ -70,7 +70,10 @@
                 if(floatval($data[$c])>$maxValue)
                   $maxValue = floatval($data[$c]);
               }
-              for ($c = 0; $c < $num; $c++) {
+              ?>
+              <td><?php echo $data[0]; ?></td>
+              <?php                                                                                                
+              for ($c = 1; $c < $num-1; $c++) {
               ?>
                 <td style="background-color: <?php echo getColorCode(floatval($data[$c])/$maxValue) ?>;"><?php if (!$c)
                                                                                                   echo $data[$c]; ?></td>
